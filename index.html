@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EPUB 转 AZW3</title>
+  <title>EPUB to AZW3</title>
   <style>
     :root {
       color-scheme: light;
@@ -33,6 +33,31 @@
       grid-template-columns: minmax(360px, 430px) minmax(520px, 1fr);
       gap: 18px;
       padding: 18px;
+    }
+    .language-switch {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .language-switch select {
+      height: 30px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 12px;
+      padding: 0 8px;
     }
     .panel {
       border: 1px solid var(--line);
@@ -399,6 +424,12 @@
       .kindle {
         height: 620px;
       }
+      .language-switch {
+        position: static;
+        margin: 10px 10px 0;
+        width: calc(100% - 20px);
+        justify-content: space-between;
+      }
     }
     @media (max-width: 640px) {
       .app { padding: 10px; gap: 10px; }
@@ -417,31 +448,45 @@
   </style>
 </head>
 <body>
+  <div class="language-switch">
+    <label for="languageSelect" data-i18n="languageLabel">Language</label>
+    <select id="languageSelect" aria-label="Language">
+      <option value="en">English</option>
+      <option value="zh-CN">中文</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="es">Español</option>
+      <option value="it">Italiano</option>
+      <option value="ar">العربية</option>
+      <option value="ko">한국어</option>
+      <option value="ja">日本語</option>
+    </select>
+  </div>
   <main class="app">
     <section class="panel left">
       <div class="brand">
-        <h1>EPUB 转 AZW3</h1>
-        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">检测转换器</span></div>
+        <h1 data-i18n="appTitle">EPUB to AZW3</h1>
+        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Checking converter</span></div>
       </div>
 
       <div id="uploadZone" class="upload-zone" role="button" tabindex="0">
         <div>
-          <p class="upload-title">拖入或选择 EPUB</p>
-          <p class="upload-copy">支持批量上传。每个文件会进入下方队列，转换后用状态点标记。</p>
+          <p class="upload-title" data-i18n="uploadTitle">Drop or choose EPUB</p>
+          <p class="upload-copy" data-i18n="uploadCopy">Batch upload is supported. Each file enters the queue below and is marked after conversion.</p>
         </div>
       </div>
       <input id="fileInput" class="hidden" type="file" accept=".epub,application/epub+zip" multiple />
 
       <div class="toolbar">
-        <button id="selectAllFilesBtn">全选</button>
-        <button id="removeSelectedBtn">移除</button>
-        <button id="convertBtn" class="primary" disabled>转换选中</button>
+        <button id="selectAllFilesBtn" data-i18n="selectAll">Select all</button>
+        <button id="removeSelectedBtn" data-i18n="remove">Remove</button>
+        <button id="convertBtn" class="primary" disabled data-i18n="convertSelected">Convert selected</button>
       </div>
 
       <div class="list-head">
         <span></span>
-        <span>文件 / 上传时间</span>
-        <span>状态</span>
+        <span data-i18n="fileUploadTime">File / upload time</span>
+        <span data-i18n="status">Status</span>
       </div>
       <div id="fileList" class="file-list"></div>
     </section>
@@ -450,28 +495,28 @@
       <section class="panel progress-card">
         <div class="progress-top">
           <div>
-            <div class="progress-title">整体进度</div>
-            <div id="progressCount" class="progress-count">0 / 0 已完成</div>
+            <div class="progress-title" data-i18n="overallProgress">Overall progress</div>
+            <div id="progressCount" class="progress-count">0 / 0 completed</div>
           </div>
           <strong id="progressPercent">0%</strong>
         </div>
-        <div class="progress-track" aria-label="整体转换进度">
+        <div id="progressTrack" class="progress-track" aria-label="Overall conversion progress">
           <div id="progressBar" class="progress-bar"></div>
         </div>
         <div class="path-row">
-          <div id="outputPath" class="path-display">未设置下载路径，默认保存到本工具临时目录</div>
-          <button id="choosePathBtn">设置下载路径</button>
-          <button id="openPathBtn">打开路径</button>
+          <div id="outputPath" class="path-display">No download folder set. Files will be saved in the app temporary folder.</div>
+          <button id="choosePathBtn" data-i18n="setDownloadPath">Set download folder</button>
+          <button id="openPathBtn" data-i18n="openPath">Open folder</button>
         </div>
       </section>
 
       <section class="device-wrap">
         <div class="kindle">
           <div class="screen-head">
-            <div class="screen-title">转换记录</div>
+            <div class="screen-title" data-i18n="conversionRecords">Conversion records</div>
             <div class="record-toolbar">
-              <button id="selectAllRecordsBtn" class="small">全选</button>
-              <button id="downloadSelectedBtn" class="small">下载选中</button>
+              <button id="selectAllRecordsBtn" class="small" data-i18n="selectAll">Select all</button>
+              <button id="downloadSelectedBtn" class="small" data-i18n="downloadSelected">Download selected</button>
             </div>
           </div>
           <div id="recordList" class="screen"></div>
@@ -481,6 +526,334 @@
   </main>
 
   <script>
+    const translations = {
+      en: {
+        languageLabel: "Language",
+        appTitle: "EPUB to AZW3",
+        checkingConverter: "Checking converter",
+        converterReady: "Converter ready",
+        converterMissing: "Calibre not found",
+        checkFailed: "Check failed",
+        uploadTitle: "Drop or choose EPUB",
+        uploadCopy: "Batch upload is supported. Each file enters the queue below and is marked after conversion.",
+        selectAll: "Select all",
+        remove: "Remove",
+        convertSelected: "Convert selected",
+        fileUploadTime: "File / upload time",
+        status: "Status",
+        overallProgress: "Overall progress",
+        completedCount: "{completed} / {total} completed",
+        noDownloadPath: "No download folder set. Files will be saved in the app temporary folder.",
+        setDownloadPath: "Set download folder",
+        openPath: "Open folder",
+        conversionRecords: "Conversion records",
+        downloadSelected: "Download selected",
+        emptyFiles: "Drop EPUB files here, or click the upload area above to choose files.",
+        emptyRecords: "Successful conversions will appear on the Kindle screen.",
+        uploaded: "Uploaded",
+        statusDone: "Completed",
+        statusFailed: "Failed",
+        statusRunning: "Converting",
+        statusQueued: "Queued",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "Converting",
+        download: "Download",
+        open: "Open",
+        uploadFailed: "Upload failed",
+        requestFailed: "Request failed",
+        progressAria: "Overall conversion progress"
+      },
+      "zh-CN": {
+        languageLabel: "语言",
+        appTitle: "EPUB 转 AZW3",
+        checkingConverter: "检测转换器",
+        converterReady: "转换器已就绪",
+        converterMissing: "未找到 Calibre",
+        checkFailed: "检测失败",
+        uploadTitle: "拖入或选择 EPUB",
+        uploadCopy: "支持批量上传。每个文件会进入下方队列，转换后用状态点标记。",
+        selectAll: "全选",
+        remove: "移除",
+        convertSelected: "转换选中",
+        fileUploadTime: "文件 / 上传时间",
+        status: "状态",
+        overallProgress: "整体进度",
+        completedCount: "{completed} / {total} 已完成",
+        noDownloadPath: "未设置下载路径，默认保存到本工具临时目录",
+        setDownloadPath: "设置下载路径",
+        openPath: "打开路径",
+        conversionRecords: "转换记录",
+        downloadSelected: "下载选中",
+        emptyFiles: "拖入 EPUB，或点击上方区域选择文件。",
+        emptyRecords: "转换成功的记录会显示在 Kindle 屏幕里。",
+        uploaded: "上传",
+        statusDone: "已完成",
+        statusFailed: "失败",
+        statusRunning: "转换中",
+        statusQueued: "待转换",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "正在转换",
+        download: "下载",
+        open: "打开",
+        uploadFailed: "上传失败",
+        requestFailed: "请求失败",
+        progressAria: "整体转换进度"
+      },
+      fr: {
+        languageLabel: "Langue",
+        appTitle: "EPUB vers AZW3",
+        checkingConverter: "Vérification du convertisseur",
+        converterReady: "Convertisseur prêt",
+        converterMissing: "Calibre introuvable",
+        checkFailed: "Échec de la vérification",
+        uploadTitle: "Déposer ou choisir un EPUB",
+        uploadCopy: "L'envoi par lot est pris en charge. Chaque fichier rejoint la file et reçoit un état après conversion.",
+        selectAll: "Tout sélectionner",
+        remove: "Retirer",
+        convertSelected: "Convertir la sélection",
+        fileUploadTime: "Fichier / heure d'envoi",
+        status: "État",
+        overallProgress: "Progression globale",
+        completedCount: "{completed} / {total} terminés",
+        noDownloadPath: "Aucun dossier de téléchargement défini. Les fichiers seront enregistrés dans le dossier temporaire de l'app.",
+        setDownloadPath: "Définir le dossier",
+        openPath: "Ouvrir le dossier",
+        conversionRecords: "Historique",
+        downloadSelected: "Télécharger la sélection",
+        emptyFiles: "Déposez des EPUB ici ou cliquez sur la zone ci-dessus.",
+        emptyRecords: "Les conversions réussies apparaîtront sur l'écran Kindle.",
+        uploaded: "Envoyé",
+        statusDone: "Terminé",
+        statusFailed: "Échec",
+        statusRunning: "Conversion",
+        statusQueued: "En attente",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "Conversion",
+        download: "Télécharger",
+        open: "Ouvrir",
+        uploadFailed: "Échec de l'envoi",
+        requestFailed: "Échec de la requête",
+        progressAria: "Progression globale de la conversion"
+      },
+      de: {
+        languageLabel: "Sprache",
+        appTitle: "EPUB zu AZW3",
+        checkingConverter: "Konverter wird geprüft",
+        converterReady: "Konverter bereit",
+        converterMissing: "Calibre nicht gefunden",
+        checkFailed: "Prüfung fehlgeschlagen",
+        uploadTitle: "EPUB ablegen oder wählen",
+        uploadCopy: "Batch-Upload wird unterstützt. Jede Datei landet in der Warteschlange und erhält nach der Konvertierung einen Status.",
+        selectAll: "Alle auswählen",
+        remove: "Entfernen",
+        convertSelected: "Auswahl konvertieren",
+        fileUploadTime: "Datei / Uploadzeit",
+        status: "Status",
+        overallProgress: "Gesamtfortschritt",
+        completedCount: "{completed} / {total} abgeschlossen",
+        noDownloadPath: "Kein Downloadordner festgelegt. Dateien werden im temporären App-Ordner gespeichert.",
+        setDownloadPath: "Downloadordner wählen",
+        openPath: "Ordner öffnen",
+        conversionRecords: "Konvertierungsverlauf",
+        downloadSelected: "Auswahl herunterladen",
+        emptyFiles: "EPUB-Dateien hier ablegen oder oben klicken.",
+        emptyRecords: "Erfolgreiche Konvertierungen erscheinen auf dem Kindle-Bildschirm.",
+        uploaded: "Hochgeladen",
+        statusDone: "Abgeschlossen",
+        statusFailed: "Fehlgeschlagen",
+        statusRunning: "Konvertiert",
+        statusQueued: "Wartend",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "Konvertiert",
+        download: "Download",
+        open: "Öffnen",
+        uploadFailed: "Upload fehlgeschlagen",
+        requestFailed: "Anfrage fehlgeschlagen",
+        progressAria: "Gesamtfortschritt der Konvertierung"
+      },
+      es: {
+        languageLabel: "Idioma",
+        appTitle: "EPUB a AZW3",
+        checkingConverter: "Comprobando conversor",
+        converterReady: "Conversor listo",
+        converterMissing: "No se encontró Calibre",
+        checkFailed: "Error de comprobación",
+        uploadTitle: "Suelta o elige EPUB",
+        uploadCopy: "Admite carga por lotes. Cada archivo entra en la cola y se marca tras la conversión.",
+        selectAll: "Seleccionar todo",
+        remove: "Eliminar",
+        convertSelected: "Convertir selección",
+        fileUploadTime: "Archivo / hora de carga",
+        status: "Estado",
+        overallProgress: "Progreso general",
+        completedCount: "{completed} / {total} completados",
+        noDownloadPath: "No hay carpeta de descarga. Los archivos se guardarán en la carpeta temporal de la app.",
+        setDownloadPath: "Elegir carpeta",
+        openPath: "Abrir carpeta",
+        conversionRecords: "Registros de conversión",
+        downloadSelected: "Descargar selección",
+        emptyFiles: "Suelta EPUB aquí o haz clic en el área superior.",
+        emptyRecords: "Las conversiones correctas aparecerán en la pantalla Kindle.",
+        uploaded: "Cargado",
+        statusDone: "Completado",
+        statusFailed: "Error",
+        statusRunning: "Convirtiendo",
+        statusQueued: "En cola",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "Convirtiendo",
+        download: "Descargar",
+        open: "Abrir",
+        uploadFailed: "Error de carga",
+        requestFailed: "Error de solicitud",
+        progressAria: "Progreso general de conversión"
+      },
+      it: {
+        languageLabel: "Lingua",
+        appTitle: "EPUB in AZW3",
+        checkingConverter: "Controllo convertitore",
+        converterReady: "Convertitore pronto",
+        converterMissing: "Calibre non trovato",
+        checkFailed: "Controllo non riuscito",
+        uploadTitle: "Trascina o scegli EPUB",
+        uploadCopy: "Supporta il caricamento in batch. Ogni file entra nella coda e viene marcato dopo la conversione.",
+        selectAll: "Seleziona tutto",
+        remove: "Rimuovi",
+        convertSelected: "Converti selezionati",
+        fileUploadTime: "File / ora caricamento",
+        status: "Stato",
+        overallProgress: "Avanzamento totale",
+        completedCount: "{completed} / {total} completati",
+        noDownloadPath: "Nessuna cartella di download impostata. I file saranno salvati nella cartella temporanea dell'app.",
+        setDownloadPath: "Imposta cartella",
+        openPath: "Apri cartella",
+        conversionRecords: "Record conversioni",
+        downloadSelected: "Scarica selezionati",
+        emptyFiles: "Trascina EPUB qui o fai clic nell'area sopra.",
+        emptyRecords: "Le conversioni riuscite appariranno sullo schermo Kindle.",
+        uploaded: "Caricato",
+        statusDone: "Completato",
+        statusFailed: "Non riuscito",
+        statusRunning: "Conversione",
+        statusQueued: "In coda",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "Conversione",
+        download: "Scarica",
+        open: "Apri",
+        uploadFailed: "Caricamento non riuscito",
+        requestFailed: "Richiesta non riuscita",
+        progressAria: "Avanzamento complessivo della conversione"
+      },
+      ar: {
+        languageLabel: "اللغة",
+        appTitle: "EPUB إلى AZW3",
+        checkingConverter: "جارٍ فحص المحول",
+        converterReady: "المحول جاهز",
+        converterMissing: "لم يتم العثور على Calibre",
+        checkFailed: "فشل الفحص",
+        uploadTitle: "اسحب أو اختر ملفات EPUB",
+        uploadCopy: "يدعم الرفع الدفعي. يدخل كل ملف إلى القائمة ويتم تمييز حالته بعد التحويل.",
+        selectAll: "تحديد الكل",
+        remove: "إزالة",
+        convertSelected: "تحويل المحدد",
+        fileUploadTime: "الملف / وقت الرفع",
+        status: "الحالة",
+        overallProgress: "التقدم الكلي",
+        completedCount: "اكتمل {completed} / {total}",
+        noDownloadPath: "لم يتم تعيين مجلد تنزيل. سيتم الحفظ في مجلد مؤقت للتطبيق.",
+        setDownloadPath: "تعيين مجلد التنزيل",
+        openPath: "فتح المجلد",
+        conversionRecords: "سجل التحويل",
+        downloadSelected: "تنزيل المحدد",
+        emptyFiles: "اسحب ملفات EPUB هنا أو انقر على منطقة الرفع أعلاه.",
+        emptyRecords: "ستظهر التحويلات الناجحة على شاشة Kindle.",
+        uploaded: "تم الرفع",
+        statusDone: "اكتمل",
+        statusFailed: "فشل",
+        statusRunning: "جارٍ التحويل",
+        statusQueued: "في الانتظار",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "جارٍ التحويل",
+        download: "تنزيل",
+        open: "فتح",
+        uploadFailed: "فشل الرفع",
+        requestFailed: "فشل الطلب",
+        progressAria: "التقدم الكلي للتحويل"
+      },
+      ko: {
+        languageLabel: "언어",
+        appTitle: "EPUB에서 AZW3로",
+        checkingConverter: "변환기 확인 중",
+        converterReady: "변환기 준비됨",
+        converterMissing: "Calibre를 찾을 수 없음",
+        checkFailed: "확인 실패",
+        uploadTitle: "EPUB 드롭 또는 선택",
+        uploadCopy: "일괄 업로드를 지원합니다. 각 파일은 대기열에 추가되고 변환 후 상태가 표시됩니다.",
+        selectAll: "전체 선택",
+        remove: "제거",
+        convertSelected: "선택 항목 변환",
+        fileUploadTime: "파일 / 업로드 시간",
+        status: "상태",
+        overallProgress: "전체 진행률",
+        completedCount: "{completed} / {total} 완료",
+        noDownloadPath: "다운로드 폴더가 설정되지 않았습니다. 앱 임시 폴더에 저장됩니다.",
+        setDownloadPath: "다운로드 폴더 설정",
+        openPath: "폴더 열기",
+        conversionRecords: "변환 기록",
+        downloadSelected: "선택 항목 다운로드",
+        emptyFiles: "EPUB 파일을 여기에 드롭하거나 위 영역을 클릭하세요.",
+        emptyRecords: "성공한 변환 기록이 Kindle 화면에 표시됩니다.",
+        uploaded: "업로드됨",
+        statusDone: "완료",
+        statusFailed: "실패",
+        statusRunning: "변환 중",
+        statusQueued: "대기 중",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "변환 중",
+        download: "다운로드",
+        open: "열기",
+        uploadFailed: "업로드 실패",
+        requestFailed: "요청 실패",
+        progressAria: "전체 변환 진행률"
+      },
+      ja: {
+        languageLabel: "言語",
+        appTitle: "EPUB から AZW3",
+        checkingConverter: "変換ツールを確認中",
+        converterReady: "変換ツール準備完了",
+        converterMissing: "Calibre が見つかりません",
+        checkFailed: "確認に失敗しました",
+        uploadTitle: "EPUB をドロップまたは選択",
+        uploadCopy: "一括アップロードに対応。各ファイルはキューに入り、変換後に状態が表示されます。",
+        selectAll: "すべて選択",
+        remove: "削除",
+        convertSelected: "選択を変換",
+        fileUploadTime: "ファイル / アップロード時刻",
+        status: "状態",
+        overallProgress: "全体の進捗",
+        completedCount: "{completed} / {total} 完了",
+        noDownloadPath: "ダウンロード先未設定。アプリの一時フォルダに保存されます。",
+        setDownloadPath: "保存先を設定",
+        openPath: "フォルダを開く",
+        conversionRecords: "変換履歴",
+        downloadSelected: "選択をダウンロード",
+        emptyFiles: "EPUB をここにドロップするか、上の領域をクリックしてください。",
+        emptyRecords: "成功した変換は Kindle 画面に表示されます。",
+        uploaded: "アップロード",
+        statusDone: "完了",
+        statusFailed: "失敗",
+        statusRunning: "変換中",
+        statusQueued: "待機中",
+        recordDone: "AZW3 / Kindle KF8",
+        recordRunning: "変換中",
+        download: "ダウンロード",
+        open: "開く",
+        uploadFailed: "アップロード失敗",
+        requestFailed: "リクエスト失敗",
+        progressAria: "全体の変換進捗"
+      }
+    };
+
+    let currentLanguage = "en";
     const state = {
       files: [],
       records: [],
@@ -492,13 +865,35 @@
 
     const $ = (id) => document.getElementById(id);
 
+    function t(key, vars = {}) {
+      const text = (translations[currentLanguage] && translations[currentLanguage][key]) || translations.en[key] || key;
+      return Object.entries(vars).reduce((value, [name, replacement]) => value.replaceAll(`{${name}}`, replacement), text);
+    }
+
+    function applyLanguage(lang) {
+      currentLanguage = translations[lang] ? lang : "en";
+      document.documentElement.lang = currentLanguage;
+      document.documentElement.dir = currentLanguage === "ar" ? "rtl" : "ltr";
+      $("languageSelect").value = currentLanguage;
+      document.title = t("appTitle");
+      document.querySelectorAll("[data-i18n]").forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+      $("progressTrack").setAttribute("aria-label", t("progressAria"));
+      $("statusText").textContent = state.converterReady ? t("converterReady") : t("converterMissing");
+      $("outputPath").textContent = state.outputDir || t("noDownloadPath");
+      renderFiles();
+      renderRecords();
+      updateCounts();
+    }
+
     async function api(path, options = {}) {
       const response = await fetch(path, {
         headers: { "Content-Type": "application/json" },
         ...options
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "请求失败");
+      if (!response.ok) throw new Error(data.error || t("requestFailed"));
       return data;
     }
 
@@ -507,7 +902,7 @@
     }
 
     function nowText() {
-      return new Date().toLocaleString("zh-CN", {
+      return new Date().toLocaleString(currentLanguage, {
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
@@ -528,16 +923,16 @@
     function updateCounts() {
       const total = state.files.length;
       const completed = state.files.filter((item) => ["done", "failed"].includes(item.status)).length;
-      $("progressCount").textContent = `${completed} / ${total} 已完成`;
+      $("progressCount").textContent = t("completedCount", { completed, total });
       if (!state.activeJobId && total) setProgress((completed / total) * 100);
       if (!total && !state.activeJobId) setProgress(0);
     }
 
     function statusLabel(status) {
-      if (status === "done") return "已完成";
-      if (status === "failed") return "失败";
-      if (status === "running") return "转换中";
-      return "待转换";
+      if (status === "done") return t("statusDone");
+      if (status === "failed") return t("statusFailed");
+      if (status === "running") return t("statusRunning");
+      return t("statusQueued");
     }
 
     function basename(path) {
@@ -578,7 +973,7 @@
       const list = $("fileList");
       list.innerHTML = "";
       if (!state.files.length) {
-        list.innerHTML = `<div class="empty">拖入 EPUB，或点击上方区域选择文件。</div>`;
+        list.innerHTML = `<div class="empty">${t("emptyFiles")}</div>`;
         $("convertBtn").disabled = true;
         return;
       }
@@ -598,7 +993,7 @@
         `;
         row.querySelector(".file-name").textContent = titleWithoutExtension(item.name);
         row.querySelector(".type-badge").textContent = extensionLabel(item.name);
-        row.querySelector(".meta").textContent = `上传 ${item.uploadTime}`;
+        row.querySelector(".meta").textContent = `${t("uploaded")} ${item.uploadTime}`;
         row.querySelector("input").addEventListener("change", (event) => {
           item.selected = event.target.checked;
           renderFiles();
@@ -613,7 +1008,7 @@
       const list = $("recordList");
       list.innerHTML = "";
       if (!state.records.length) {
-        list.innerHTML = `<div class="empty">转换成功的记录会显示在 Kindle 屏幕里。</div>`;
+        list.innerHTML = `<div class="empty">${t("emptyRecords")}</div>`;
         return;
       }
       state.records.forEach((record) => {
@@ -629,7 +1024,7 @@
           <div class="record-actions"></div>
         `;
         row.querySelector(".record-title").textContent = record.name;
-        row.querySelector(".meta").textContent = `${record.status === "done" ? "AZW3 / Kindle KF8" : "正在转换"} · ${record.time}`;
+        row.querySelector(".meta").textContent = `${record.status === "done" ? t("recordDone") : t("recordRunning")} · ${record.time}`;
         row.querySelector("input").addEventListener("change", (event) => {
           record.selected = event.target.checked;
         });
@@ -638,12 +1033,12 @@
           const download = document.createElement("a");
           download.className = "button-link small";
           download.href = `/api/download?path=${encodeURIComponent(record.path)}`;
-          download.textContent = "下载";
+          download.textContent = t("download");
           actions.appendChild(download);
 
           const open = document.createElement("button");
           open.className = "small";
-          open.textContent = "打开";
+          open.textContent = t("open");
           open.addEventListener("click", () => api("/api/open-path", {
             method: "POST",
             body: JSON.stringify({ path: record.path })
@@ -658,14 +1053,14 @@
       const data = await api("/api/status");
       state.converterReady = Boolean(data.calibreInstalled);
       $("statusDot").classList.toggle("ready", state.converterReady);
-      $("statusText").textContent = state.converterReady ? "转换器已就绪" : "未找到 Calibre";
+      $("statusText").textContent = state.converterReady ? t("converterReady") : t("converterMissing");
       renderFiles();
     }
 
     async function chooseOutputDir() {
       const data = await api("/api/select-output-dir", { method: "POST", body: "{}" });
       state.outputDir = data.outputDir || "";
-      $("outputPath").textContent = state.outputDir || "未设置下载路径，默认保存到本工具临时目录";
+      $("outputPath").textContent = state.outputDir || t("noDownloadPath");
     }
 
     async function uploadAndConvert(items) {
@@ -677,7 +1072,7 @@
         body: formData
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "上传失败");
+      if (!response.ok) throw new Error(data.error || t("uploadFailed"));
       return data;
     }
 
@@ -853,10 +1248,14 @@
         triggerZipDownload(selected);
       }
     });
+    $("languageSelect").addEventListener("change", (event) => {
+      applyLanguage(event.target.value);
+    });
 
+    applyLanguage("en");
     refreshStatus().catch(() => {
       state.converterReady = false;
-      $("statusText").textContent = "检测失败";
+      $("statusText").textContent = t("checkFailed");
       renderFiles();
     });
     renderFiles();
