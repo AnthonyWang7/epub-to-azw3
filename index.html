@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EPUB 转 AZW3</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f3f3f1;
+      --panel: #ffffff;
+      --ink: #161616;
+      --muted: #6d6d6d;
+      --line: #c8c8c4;
+      --line-dark: #202020;
+      --soft: #eeeeeb;
+      --soft-2: #e1e1dd;
+      --ok: #15803d;
+      --warn: #b7791f;
+      --fail: #b42318;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(360px, 430px) minmax(520px, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      min-width: 0;
+    }
+    .left {
+      display: grid;
+      grid-template-rows: auto auto auto auto 1fr;
+      min-height: calc(100vh - 36px);
+      overflow: hidden;
+    }
+    .brand {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    .status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--warn);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .dot.ready, .dot.done { background: var(--ok); }
+    .dot.queued { background: #8f8f8f; }
+    .dot.running { background: var(--warn); }
+    .dot.failed { background: var(--fail); }
+    .upload-zone {
+      margin: 14px;
+      min-height: 132px;
+      border: 1px dashed #8d8d8a;
+      border-radius: 8px;
+      background: #f8f8f6;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+      cursor: pointer;
+      transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    .upload-zone.dragging {
+      background: #efefec;
+      border-color: var(--line-dark);
+      box-shadow: inset 0 0 0 2px #2d2d2d;
+    }
+    .upload-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 750;
+    }
+    .upload-copy {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    .toolbar {
+      padding: 0 14px 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button, .button-link {
+      appearance: none;
+      height: 36px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 12px;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover, .button-link:hover { background: #f2f2ef; }
+    button.primary {
+      background: #151515;
+      color: #fff;
+    }
+    button.primary:hover { background: #303030; }
+    button:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+    }
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #111;
+      flex: 0 0 auto;
+    }
+    .list-head {
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #f7f7f5;
+      color: var(--muted);
+      font-size: 12px;
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) 110px;
+      gap: 8px;
+    }
+    .file-list {
+      overflow: auto;
+      min-height: 0;
+    }
+    .empty {
+      margin: 18px;
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .file-row {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) 110px;
+      gap: 8px;
+      align-items: center;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+    }
+    .file-info {
+      min-width: 0;
+    }
+    .file-title-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .file-name, .record-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 620;
+      font-size: 13px;
+    }
+    .file-name {
+      display: block;
+    }
+    .type-badge {
+      height: 20px;
+      padding: 0 7px;
+      border: 1px solid #9a9a96;
+      border-radius: 999px;
+      color: #404040;
+      background: #f4f4f1;
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 740;
+      letter-spacing: .02em;
+      flex: 0 0 auto;
+    }
+    .meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .state-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      align-self: center;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .right {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 18px;
+    }
+    .progress-card {
+      padding: 16px;
+    }
+    .progress-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .progress-title {
+      font-size: 18px;
+      font-weight: 750;
+    }
+    .progress-count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .progress-track {
+      height: 14px;
+      border: 1px solid var(--line-dark);
+      border-radius: 999px;
+      background: #e9e9e5;
+      overflow: hidden;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #151515;
+      transition: width .25s ease;
+    }
+    .path-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: center;
+    }
+    .path-display {
+      min-width: 0;
+      height: 36px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      background: #fafaf8;
+    }
+    .device-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      padding: 16px;
+    }
+    .kindle {
+      width: min(760px, 100%);
+      height: min(720px, calc(100vh - 210px));
+      min-height: 520px;
+      border: 14px solid #111;
+      border-bottom-width: 34px;
+      border-radius: 24px;
+      background: #111;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .22);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      position: relative;
+    }
+    .kindle::after {
+      content: "";
+      width: 44px;
+      height: 4px;
+      border-radius: 999px;
+      background: #555;
+      position: absolute;
+      left: 50%;
+      bottom: 13px;
+      transform: translateX(-50%);
+    }
+    .screen-head {
+      background: #deded8;
+      border-bottom: 1px solid #ababaa;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .screen-title {
+      font-weight: 760;
+      font-size: 15px;
+    }
+    .record-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .screen {
+      min-height: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.5), rgba(235,235,229,.82)),
+        repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(0,0,0,.025) 24px);
+      padding: 12px;
+      overflow: auto;
+    }
+    .record-row {
+      display: grid;
+      grid-template-columns: 28px 30px 1fr auto;
+      gap: 9px;
+      align-items: center;
+      padding: 10px;
+      background: rgba(255,255,255,.68);
+      border: 1px solid #bdbdb8;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .symbol {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 800;
+      background: #d8d8d2;
+      color: #333;
+    }
+    .symbol.done {
+      color: var(--ok);
+      background: #e5f1e8;
+    }
+    .symbol.running {
+      color: var(--warn);
+      background: #f7efd7;
+    }
+    .symbol.failed {
+      color: var(--fail);
+      background: #f5e3e0;
+    }
+    .record-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .small {
+      height: 30px;
+      padding: 0 9px;
+      font-size: 12px;
+      border-color: #777;
+    }
+    .hidden { display: none; }
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .left {
+        min-height: 520px;
+      }
+      .kindle {
+        height: 620px;
+      }
+    }
+    @media (max-width: 640px) {
+      .app { padding: 10px; gap: 10px; }
+      .path-row { grid-template-columns: 1fr; }
+      .file-row, .list-head {
+        grid-template-columns: 28px 1fr;
+      }
+      .state-cell, .list-head span:last-child { display: none; }
+      .record-row {
+        grid-template-columns: 26px 28px 1fr;
+      }
+      .record-actions {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel left">
+      <div class="brand">
+        <h1>EPUB 转 AZW3</h1>
+        <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">检测转换器</span></div>
+      </div>
+
+      <div id="uploadZone" class="upload-zone" role="button" tabindex="0">
+        <div>
+          <p class="upload-title">拖入或选择 EPUB</p>
+          <p class="upload-copy">支持批量上传。每个文件会进入下方队列，转换后用状态点标记。</p>
+        </div>
+      </div>
+      <input id="fileInput" class="hidden" type="file" accept=".epub,application/epub+zip" multiple />
+
+      <div class="toolbar">
+        <button id="selectAllFilesBtn">全选</button>
+        <button id="removeSelectedBtn">移除</button>
+        <button id="convertBtn" class="primary" disabled>转换选中</button>
+      </div>
+
+      <div class="list-head">
+        <span></span>
+        <span>文件 / 上传时间</span>
+        <span>状态</span>
+      </div>
+      <div id="fileList" class="file-list"></div>
+    </section>
+
+    <section class="right">
+      <section class="panel progress-card">
+        <div class="progress-top">
+          <div>
+            <div class="progress-title">整体进度</div>
+            <div id="progressCount" class="progress-count">0 / 0 已完成</div>
+          </div>
+          <strong id="progressPercent">0%</strong>
+        </div>
+        <div class="progress-track" aria-label="整体转换进度">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div class="path-row">
+          <div id="outputPath" class="path-display">未设置下载路径，默认保存到本工具临时目录</div>
+          <button id="choosePathBtn">设置下载路径</button>
+          <button id="openPathBtn">打开路径</button>
+        </div>
+      </section>
+
+      <section class="device-wrap">
+        <div class="kindle">
+          <div class="screen-head">
+            <div class="screen-title">转换记录</div>
+            <div class="record-toolbar">
+              <button id="selectAllRecordsBtn" class="small">全选</button>
+              <button id="downloadSelectedBtn" class="small">下载选中</button>
+            </div>
+          </div>
+          <div id="recordList" class="screen"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      files: [],
+      records: [],
+      converterReady: false,
+      outputDir: "",
+      activeJobId: null,
+      polling: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "请求失败");
+      return data;
+    }
+
+    function fileId(file) {
+      return `${file.name}:${file.size}:${file.lastModified}`;
+    }
+
+    function nowText() {
+      return new Date().toLocaleString("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function recordKey(path) {
+      return path || Math.random().toString(36);
+    }
+
+    function setProgress(value) {
+      const progress = Math.max(0, Math.min(100, Math.round(value || 0)));
+      $("progressBar").style.width = `${progress}%`;
+      $("progressPercent").textContent = `${progress}%`;
+    }
+
+    function updateCounts() {
+      const total = state.files.length;
+      const completed = state.files.filter((item) => ["done", "failed"].includes(item.status)).length;
+      $("progressCount").textContent = `${completed} / ${total} 已完成`;
+      if (!state.activeJobId && total) setProgress((completed / total) * 100);
+      if (!total && !state.activeJobId) setProgress(0);
+    }
+
+    function statusLabel(status) {
+      if (status === "done") return "已完成";
+      if (status === "failed") return "失败";
+      if (status === "running") return "转换中";
+      return "待转换";
+    }
+
+    function basename(path) {
+      return String(path || "").split(/[\\/]/).filter(Boolean).pop() || path;
+    }
+
+    function extensionLabel(name) {
+      const match = String(name || "").match(/\.([^.]+)$/);
+      return match ? match[1].toUpperCase() : "FILE";
+    }
+
+    function titleWithoutExtension(name) {
+      return String(name || "").replace(/\.[^.]+$/, "");
+    }
+
+    function addFiles(fileList) {
+      const existing = new Set(state.files.map((item) => item.id));
+      [...fileList]
+        .filter((file) => file.name.toLowerCase().endsWith(".epub"))
+        .forEach((file) => {
+          const id = fileId(file);
+          if (existing.has(id)) return;
+          state.files.push({
+            id,
+            file,
+            name: file.name,
+            uploadTime: nowText(),
+            selected: true,
+            status: "queued"
+          });
+          existing.add(id);
+        });
+      renderFiles();
+      updateCounts();
+    }
+
+    function renderFiles() {
+      const list = $("fileList");
+      list.innerHTML = "";
+      if (!state.files.length) {
+        list.innerHTML = `<div class="empty">拖入 EPUB，或点击上方区域选择文件。</div>`;
+        $("convertBtn").disabled = true;
+        return;
+      }
+      state.files.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "file-row";
+        row.innerHTML = `
+          <input type="checkbox" ${item.selected ? "checked" : ""}>
+          <div class="file-info">
+            <div class="file-title-line">
+              <div class="file-name"></div>
+              <span class="type-badge"></span>
+            </div>
+            <div class="meta"></div>
+          </div>
+          <div class="state-cell"><span class="dot ${item.status}"></span><span>${statusLabel(item.status)}</span></div>
+        `;
+        row.querySelector(".file-name").textContent = titleWithoutExtension(item.name);
+        row.querySelector(".type-badge").textContent = extensionLabel(item.name);
+        row.querySelector(".meta").textContent = `上传 ${item.uploadTime}`;
+        row.querySelector("input").addEventListener("change", (event) => {
+          item.selected = event.target.checked;
+          renderFiles();
+        });
+        list.appendChild(row);
+      });
+      const hasSelected = state.files.some((item) => item.selected && item.status !== "running");
+      $("convertBtn").disabled = !state.converterReady || !hasSelected || Boolean(state.activeJobId);
+    }
+
+    function renderRecords() {
+      const list = $("recordList");
+      list.innerHTML = "";
+      if (!state.records.length) {
+        list.innerHTML = `<div class="empty">转换成功的记录会显示在 Kindle 屏幕里。</div>`;
+        return;
+      }
+      state.records.forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "record-row";
+        row.innerHTML = `
+          <input type="checkbox" ${record.selected ? "checked" : ""}>
+          <div class="symbol ${record.status}">${record.status === "done" ? "✓" : record.status === "running" ? "⚠" : "!"}</div>
+          <div>
+            <div class="record-title"></div>
+            <div class="meta"></div>
+          </div>
+          <div class="record-actions"></div>
+        `;
+        row.querySelector(".record-title").textContent = record.name;
+        row.querySelector(".meta").textContent = `${record.status === "done" ? "AZW3 / Kindle KF8" : "正在转换"} · ${record.time}`;
+        row.querySelector("input").addEventListener("change", (event) => {
+          record.selected = event.target.checked;
+        });
+        const actions = row.querySelector(".record-actions");
+        if (record.status === "done") {
+          const download = document.createElement("a");
+          download.className = "button-link small";
+          download.href = `/api/download?path=${encodeURIComponent(record.path)}`;
+          download.textContent = "下载";
+          actions.appendChild(download);
+
+          const open = document.createElement("button");
+          open.className = "small";
+          open.textContent = "打开";
+          open.addEventListener("click", () => api("/api/open-path", {
+            method: "POST",
+            body: JSON.stringify({ path: record.path })
+          }));
+          actions.appendChild(open);
+        }
+        list.appendChild(row);
+      });
+    }
+
+    async function refreshStatus() {
+      const data = await api("/api/status");
+      state.converterReady = Boolean(data.calibreInstalled);
+      $("statusDot").classList.toggle("ready", state.converterReady);
+      $("statusText").textContent = state.converterReady ? "转换器已就绪" : "未找到 Calibre";
+      renderFiles();
+    }
+
+    async function chooseOutputDir() {
+      const data = await api("/api/select-output-dir", { method: "POST", body: "{}" });
+      state.outputDir = data.outputDir || "";
+      $("outputPath").textContent = state.outputDir || "未设置下载路径，默认保存到本工具临时目录";
+    }
+
+    async function uploadAndConvert(items) {
+      const formData = new FormData();
+      items.forEach((item) => formData.append("files", item.file, item.name));
+      formData.append("outputDir", state.outputDir);
+      const response = await fetch("/api/upload-convert", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "上传失败");
+      return data;
+    }
+
+    function addRunningRecords(items) {
+      items.forEach((item) => {
+        state.records.unshift({
+          key: item.id,
+          name: item.name.replace(/\.epub$/i, ".azw3"),
+          status: "running",
+          time: nowText(),
+          path: "",
+          selected: false
+        });
+      });
+      renderRecords();
+    }
+
+    function mergeOutputs(job) {
+      (job.outputs || []).forEach((output) => {
+        const key = recordKey(output.path);
+        const existing = state.records.find((record) => record.path === output.path || record.name === output.name);
+        if (existing) {
+          existing.status = "done";
+          existing.name = output.name;
+          existing.path = output.path;
+          existing.time = job.finishedAt || nowText();
+        } else {
+          state.records.unshift({
+            key,
+            name: output.name,
+            status: "done",
+            time: job.finishedAt || nowText(),
+            path: output.path,
+            selected: false
+          });
+        }
+
+        const sourceName = basename(output.source);
+        const fileItem = state.files.find((item) => item.name === sourceName);
+        if (fileItem) fileItem.status = "done";
+      });
+
+      (job.failed || []).forEach((failedPath) => {
+        const failedName = basename(failedPath);
+        const fileItem = state.files.find((item) => item.name === failedName);
+        if (fileItem) fileItem.status = "failed";
+        const outputName = failedName.replace(/\.epub$/i, ".azw3");
+        const failedRecord = state.records.find((record) => record.name === outputName);
+        if (failedRecord) {
+          failedRecord.status = "failed";
+          failedRecord.time = job.finishedAt || nowText();
+        }
+      });
+    }
+
+    async function pollJobs() {
+      const data = await api("/api/jobs");
+      const job = data.jobs.find((item) => item.id === state.activeJobId);
+      if (!job) return;
+
+      setProgress(job.progress || 0);
+      if (job.currentLabel) {
+        const current = state.files.find((item) => item.name === job.currentLabel);
+        if (current) current.status = "running";
+      }
+
+      mergeOutputs(job);
+      renderFiles();
+      renderRecords();
+      updateCounts();
+
+      if (job.status === "done" || job.status === "failed") {
+        clearInterval(state.polling);
+        state.polling = null;
+        state.activeJobId = null;
+        setProgress(100);
+        renderFiles();
+      }
+    }
+
+    function triggerDownload(record) {
+      if (!record.path) return;
+      const link = document.createElement("a");
+      link.href = `/api/download?path=${encodeURIComponent(record.path)}`;
+      link.download = record.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function triggerZipDownload(records) {
+      const params = new URLSearchParams();
+      records.forEach((record) => params.append("path", record.path));
+      const link = document.createElement("a");
+      link.href = `/api/download-zip?${params.toString()}`;
+      link.download = "azw3-selected.zip";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    $("uploadZone").addEventListener("click", () => $("fileInput").click());
+    $("uploadZone").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        $("fileInput").click();
+      }
+    });
+    $("uploadZone").addEventListener("dragenter", (event) => {
+      event.preventDefault();
+      $("uploadZone").classList.add("dragging");
+    });
+    $("uploadZone").addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    });
+    $("uploadZone").addEventListener("dragleave", (event) => {
+      if (!$("uploadZone").contains(event.relatedTarget)) $("uploadZone").classList.remove("dragging");
+    });
+    $("uploadZone").addEventListener("drop", (event) => {
+      event.preventDefault();
+      $("uploadZone").classList.remove("dragging");
+      addFiles(event.dataTransfer.files);
+    });
+    $("fileInput").addEventListener("change", (event) => {
+      addFiles(event.target.files);
+      event.target.value = "";
+    });
+    $("selectAllFilesBtn").addEventListener("click", () => {
+      const allSelected = state.files.every((item) => item.selected);
+      state.files.forEach((item) => item.selected = !allSelected);
+      renderFiles();
+    });
+    $("removeSelectedBtn").addEventListener("click", () => {
+      state.files = state.files.filter((item) => !item.selected || item.status === "running");
+      renderFiles();
+      updateCounts();
+    });
+    $("convertBtn").addEventListener("click", async () => {
+      const selected = state.files.filter((item) => item.selected && item.status !== "running");
+      if (!selected.length) return;
+      selected.forEach((item) => item.status = "queued");
+      addRunningRecords(selected);
+      renderFiles();
+      setProgress(1);
+      const data = await uploadAndConvert(selected);
+      state.activeJobId = data.jobId;
+      clearInterval(state.polling);
+      state.polling = setInterval(() => pollJobs().catch(console.error), 800);
+      pollJobs().catch(console.error);
+    });
+    $("choosePathBtn").addEventListener("click", () => chooseOutputDir().catch((err) => {
+      if (!/cancel/i.test(err.message)) alert(err.message);
+    }));
+    $("openPathBtn").addEventListener("click", () => {
+      if (!state.outputDir) return;
+      api("/api/open-path", {
+        method: "POST",
+        body: JSON.stringify({ path: state.outputDir })
+      }).catch((err) => alert(err.message));
+    });
+    $("selectAllRecordsBtn").addEventListener("click", () => {
+      const downloadable = state.records.filter((record) => record.status === "done");
+      const allSelected = downloadable.length && downloadable.every((record) => record.selected);
+      downloadable.forEach((record) => record.selected = !allSelected);
+      renderRecords();
+    });
+    $("downloadSelectedBtn").addEventListener("click", () => {
+      const selected = state.records.filter((record) => record.selected && record.status === "done");
+      if (selected.length === 1) {
+        triggerDownload(selected[0]);
+      } else if (selected.length > 1) {
+        triggerZipDownload(selected);
+      }
+    });
+
+    refreshStatus().catch(() => {
+      state.converterReady = false;
+      $("statusText").textContent = "检测失败";
+      renderFiles();
+    });
+    renderFiles();
+    renderRecords();
+    updateCounts();
+  </script>
+</body>
+</html>
